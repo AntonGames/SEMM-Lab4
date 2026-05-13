@@ -132,6 +132,48 @@ load library-z-spec.tex
 
 > **Note:** ZLive animation (`do InitLibrary`) will not work because the specification uses abstract given sets (`ISBN`, `PERSON`, `TITLE`) which are infinite. ZLive can only animate schemas with finite, bounded types. The typechecker confirmation (`0 warnings and errors`) is the primary verification method.
 
+## Z Notation — LaTeX Commands Reference
+
+All Z symbols in the specification are entered as plain ASCII LaTeX commands:
+
+| LaTeX Command | Z Symbol | Meaning |
+|---|---|---|
+| `\power` | ℙ | Power set |
+| `\pfun` | ⇸ | Partial function |
+| `\fun` | → | Total function |
+| `\mapsto` | ↦ | Maplet |
+| `\nat` | ℕ | Natural numbers |
+| `\nat_1` | ℕ₁ | Positive naturals |
+| `\forall` | ∀ | Universal quantifier |
+| `\exists` | ∃ | Existential quantifier |
+| `\in` | ∈ | Membership |
+| `\notin` | ∉ | Non-membership |
+| `\subseteq` | ⊆ | Subset |
+| `\emptyset` | ∅ | Empty set |
+| `\dom` | dom | Domain |
+| `\ran` | ran | Range |
+| `\oplus` | ⊕ | Function override |
+| `\ndres` | ⩤ | Domain subtraction |
+| `\cup` | ∪ | Set union |
+| `\cap` | ∩ | Set intersection |
+| `\setminus` | \ | Set difference |
+| `\langle \rangle` | ⟨ ⟩ | Sequence brackets |
+| `\cat` | ⌢ | Sequence concatenation |
+| `\Delta` | Δ | State change (includes before+after) |
+| `\Xi` | Ξ | No state change |
+| `\land` | ∧ | Schema conjunction |
+| `\lor` | ∨ | Schema disjunction |
+| `\lnot` | ¬ | Schema negation |
+| `\semi` | ⨟ | Schema composition |
+| `\leq` | ≤ | Less or equal |
+| `\geq` | ≥ | Greater or equal |
+| `\neq` | ≠ | Not equal |
+| `\#` | # | Cardinality |
+| `\\` | | Line separator in schemas |
+| `\where` | | Separates declarations from predicates |
+
+No special keyboard or fonts are needed — everything is typed in a plain text editor.
+
 ## References
 
 - J.M. Spivey, *The Z Notation: A Reference Manual*, 2nd ed., 2001
