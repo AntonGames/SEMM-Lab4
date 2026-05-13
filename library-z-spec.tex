@@ -1,0 +1,516 @@
+\documentclass{article}
+\usepackage{oz}
+
+\begin{document}
+
+% ============================================================
+% Library Management System - Z Specification
+% Author: Anton Zagzin
+% Course: Software Engineering Methods and Tools (SEMM), Lab 4
+% Tool: CZT (Community Z Tools) 1.6
+% ============================================================
+
+\begin{zsection}
+  \SECTION LibrarySystem \parents standard\_toolkit
+\end{zsection}
+
+% ============================================================
+% 1. BASIC TYPES AND FREE TYPES
+% ============================================================
+
+% Given sets representing the core domain entities
+\begin{zed}
+  [PERSON, ISBN, TITLE]
+\end{zed}
+
+% Genre classification for books
+\begin{zed}
+  GENRE ::= fiction | nonfiction | science | history | biography
+\end{zed}
+
+% Response codes for operations
+\begin{zed}
+  REPORT ::= ok \\
+    | bookNotFound \\
+    | memberNotFound \\
+    | bookAlreadyExists \\
+    | memberAlreadyExists \\
+    | alreadyBorrowed \\
+    | notBorrowed \\
+    | loanLimitReached
+\end{zed}
+
+% Maximum number of books a single member can borrow
+\begin{axdef}
+  maxLoans : \nat_1
+\where
+  maxLoans = 5
+\end{axdef}
+
+% ============================================================
+% 2. STATE SCHEMA (6 state variables, 6 invariants)
+% ============================================================
+
+% The main state of the library system
+% State variables:
+%   books    - set of all book ISBNs in the library
+%   members  - set of registered library members
+%   title    - mapping from ISBN to book title
+%   genre    - mapping from ISBN to book genre
+%   loans    - current active loans (book -> borrower)
+%   waitlist - reservation queue per book
+\begin{schema}{Library}
+  books : \power ISBN \\
+  members : \power PERSON \\
+  title : ISBN \pfun TITLE \\
+  genre : ISBN \pfun GENRE \\
+  loans : ISBN \pfun PERSON \\
+  waitlist : ISBN \pfun \seq PERSON
+\where
+  % Inv1: every book has a title
+  \dom title = books \\
+  % Inv2: every book has a genre
+  \dom genre = books \\
+  % Inv3: only registered books can be loaned out
+  \dom loans \subseteq books \\
+  % Inv4: only registered members can borrow
+  \ran loans \subseteq members \\
+  % Inv5: waitlists exist only for registered books
+  \dom waitlist \subseteq books \\
+  % Inv6: no member may borrow more than maxLoans books
+  \forall m : members @ \# \{ b : \dom loans | loans(b) = m \} \leq maxLoans
+\end{schema}
+
+% ============================================================
+% 3. FUNCTIONS (4 axiomatic definitions)
+% ============================================================
+
+% Function 1: books currently borrowed by a given member
+\begin{axdef}
+  borrowedBy : PERSON \cross \power (ISBN \cross PERSON) \fun \power ISBN
+\where
+  \forall m : PERSON; ln : \power (ISBN \cross PERSON) @ \\
+    \t1 borrowedBy(m, ln) = \{ b : \dom ln | (b, m) \in ln \}
+\end{axdef}
+
+% Function 2: set of books currently available (not on loan)
+\begin{axdef}
+  availableBooks : \power ISBN \cross \power (ISBN \cross PERSON) \fun \power ISBN
+\where
+  \forall bs : \power ISBN; ln : \power (ISBN \cross PERSON) @ \\
+    \t1 availableBooks(bs, ln) = bs \setminus \dom ln
+\end{axdef}
+
+% Function 3: number of loans for a given member
+\begin{axdef}
+  loanCount : PERSON \cross \power (ISBN \cross PERSON) \fun \nat
+\where
+  \forall m : PERSON; ln : \power (ISBN \cross PERSON) @ \\
+    \t1 loanCount(m, ln) = \# \{ b : \dom ln | (b, m) \in ln \}
+\end{axdef}
+
+% Function 4: filter books by genre
+\begin{axdef}
+  booksByGenre : GENRE \cross \power ISBN \cross (ISBN \pfun GENRE) \fun \power ISBN
+\where
+  \forall g : GENRE; bs : \power ISBN; gn : ISBN \pfun GENRE @ \\
+    \t1 booksByGenre(g, bs, gn) = \{ b : bs | b \in \dom gn \land gn(b) = g \}
+\end{axdef}
+
+% ============================================================
+% 4. INITIAL STATE
+% ============================================================
+
+% The library starts empty
+\begin{schema}{InitLibrary}
+  Library~'
+\where
+  books' = \emptyset \\
+  members' = \emptyset \\
+  title' = \emptyset \\
+  genre' = \emptyset \\
+  loans' = \emptyset \\
+  waitlist' = \emptyset
+\end{schema}
+
+% ============================================================
+% 5. OPERATIONS (7 operations, all with pre and post conditions)
+% ============================================================
+
+% --- Operation 1: Add a new book to the library ---
+\begin{schema}{AddBook}
+  \Delta Library \\
+  isbn? : ISBN \\
+  t? : TITLE \\
+  g? : GENRE
+\where
+  % Pre: the book must not already exist
+  isbn? \notin books \\
+  % Post: book is added with its title and genre
+  books' = books \cup \{ isbn? \} \\
+  title' = title \cup \{ isbn? \mapsto t? \} \\
+  genre' = genre \cup \{ isbn? \mapsto g? \} \\
+  waitlist' = waitlist \cup \{ isbn? \mapsto \langle \rangle \} \\
+  % Frame: loans and members unchanged
+  loans' = loans \\
+  members' = members
+\end{schema}
+
+% --- Operation 2: Remove a book from the library ---
+\begin{schema}{RemoveBook}
+  \Delta Library \\
+  isbn? : ISBN
+\where
+  % Pre: book exists and is not currently on loan
+  isbn? \in books \\
+  isbn? \notin \dom loans \\
+  % Post: book and all its mappings are removed
+  books' = books \setminus \{ isbn? \} \\
+  title' = \{ isbn? \} \ndres title \\
+  genre' = \{ isbn? \} \ndres genre \\
+  waitlist' = \{ isbn? \} \ndres waitlist \\
+  % Frame
+  loans' = loans \\
+  members' = members
+\end{schema}
+
+% --- Operation 3: Register a new member ---
+\begin{schema}{RegisterMember}
+  \Delta Library \\
+  p? : PERSON
+\where
+  % Pre: person is not already registered
+  p? \notin members \\
+  % Post: person is added to the member set
+  members' = members \cup \{ p? \} \\
+  % Frame
+  books' = books \\
+  title' = title \\
+  genre' = genre \\
+  loans' = loans \\
+  waitlist' = waitlist
+\end{schema}
+
+% --- Operation 4: Remove a member ---
+\begin{schema}{RemoveMember}
+  \Delta Library \\
+  p? : PERSON
+\where
+  % Pre: member exists and has no active loans
+  p? \in members \\
+  p? \notin \ran loans \\
+  % Post: member is removed
+  members' = members \setminus \{ p? \} \\
+  % Frame
+  books' = books \\
+  title' = title \\
+  genre' = genre \\
+  loans' = loans \\
+  waitlist' = waitlist
+\end{schema}
+
+% --- Operation 5: Borrow a book ---
+\begin{schema}{BorrowBook}
+  \Delta Library \\
+  isbn? : ISBN \\
+  p? : PERSON
+\where
+  % Pre: book exists, member exists, book is available, member under limit
+  isbn? \in books \\
+  p? \in members \\
+  isbn? \notin \dom loans \\
+  loanCount(p?, loans) < maxLoans \\
+  % Post: loan is recorded
+  loans' = loans \cup \{ isbn? \mapsto p? \} \\
+  % Frame
+  books' = books \\
+  members' = members \\
+  title' = title \\
+  genre' = genre \\
+  waitlist' = waitlist
+\end{schema}
+
+% --- Operation 6: Return a book ---
+\begin{schema}{ReturnBook}
+  \Delta Library \\
+  isbn? : ISBN \\
+  p? : PERSON
+\where
+  % Pre: book is currently borrowed by this member
+  isbn? \in \dom loans \\
+  loans(isbn?) = p? \\
+  % Post: loan record is removed
+  loans' = \{ isbn? \} \ndres loans \\
+  % Frame
+  books' = books \\
+  members' = members \\
+  title' = title \\
+  genre' = genre \\
+  waitlist' = waitlist
+\end{schema}
+
+% --- Operation 7: Search books by genre (returns a set) ---
+\begin{schema}{SearchByGenre}
+  \Xi Library \\
+  g? : GENRE \\
+  result! : \power ISBN
+\where
+  % Pre: library has books
+  books \neq \emptyset \\
+  % Post: returns all books of the requested genre
+  result! = booksByGenre(g?, books, genre)
+\end{schema}
+
+% --- Operation 8: Get all books borrowed by a member (returns a set) ---
+\begin{schema}{GetMemberBooks}
+  \Xi Library \\
+  p? : PERSON \\
+  result! : \power ISBN
+\where
+  % Pre: person is a registered member
+  p? \in members \\
+  % Post: returns the set of books currently borrowed by this member
+  result! = borrowedBy(p?, loans)
+\end{schema}
+
+% ============================================================
+% 6. ERROR SCHEMAS AND SCHEMA CALCULUS
+% ============================================================
+
+% --- Success and error report schemas ---
+\begin{schema}{Success}
+  r! : REPORT
+\where
+  r! = ok
+\end{schema}
+
+\begin{schema}{BookNotFoundError}
+  \Xi Library \\
+  r! : REPORT
+\where
+  r! = bookNotFound
+\end{schema}
+
+\begin{schema}{MemberNotFoundError}
+  \Xi Library \\
+  r! : REPORT
+\where
+  r! = memberNotFound
+\end{schema}
+
+\begin{schema}{BookAlreadyExistsError}
+  \Xi Library \\
+  r! : REPORT \\
+  isbn? : ISBN
+\where
+  isbn? \in books \\
+  r! = bookAlreadyExists
+\end{schema}
+
+\begin{schema}{MemberAlreadyExistsError}
+  \Xi Library \\
+  r! : REPORT \\
+  p? : PERSON
+\where
+  p? \in members \\
+  r! = memberAlreadyExists
+\end{schema}
+
+\begin{schema}{AlreadyBorrowedError}
+  \Xi Library \\
+  r! : REPORT \\
+  isbn? : ISBN
+\where
+  isbn? \in \dom loans \\
+  r! = alreadyBorrowed
+\end{schema}
+
+\begin{schema}{NotBorrowedError}
+  \Xi Library \\
+  r! : REPORT \\
+  isbn? : ISBN
+\where
+  isbn? \notin \dom loans \\
+  r! = notBorrowed
+\end{schema}
+
+\begin{schema}{LoanLimitError}
+  \Xi Library \\
+  r! : REPORT \\
+  p? : PERSON
+\where
+  loanCount(p?, loans) \geq maxLoans \\
+  r! = loanLimitReached
+\end{schema}
+
+% ============================================================
+% Schema Calculus Operator 1: CONJUNCTION (and)
+% Combine AddBook with Success to form a robust operation
+% ============================================================
+\begin{zed}
+  AddBookOk == AddBook \land Success
+\end{zed}
+
+% ============================================================
+% Schema Calculus Operator 2: DISJUNCTION (or)
+% Total operation: either succeeds or returns an error
+% ============================================================
+\begin{zed}
+  TotalAddBook == AddBookOk \lor BookAlreadyExistsError
+\end{zed}
+
+% ============================================================
+% Schema Calculus Operator 3: NEGATION (not)
+% BookNotOnLoan describes the condition when a book is not loaned
+% ============================================================
+\begin{schema}{BookOnLoan}
+  Library \\
+  isbn? : ISBN
+\where
+  isbn? \in \dom loans
+\end{schema}
+
+\begin{zed}
+  BookNotOnLoan == \lnot BookOnLoan
+\end{zed}
+
+% ============================================================
+% Schema Calculus Operator 4: COMPOSITION (sequential)
+% Borrow a book and then immediately query the member's books
+% ============================================================
+\begin{zed}
+  BorrowAndQuery == BorrowBook \semi GetMemberBooks
+\end{zed}
+
+% Additional total operations using schema calculus (disjunction)
+\begin{zed}
+  BorrowBookOk == BorrowBook \land Success
+\end{zed}
+
+\begin{zed}
+  TotalBorrowBook == BorrowBookOk \lor BookNotFoundError \\
+    \t1 \lor AlreadyBorrowedError \lor LoanLimitError
+\end{zed}
+
+\begin{zed}
+  ReturnBookOk == ReturnBook \land Success
+\end{zed}
+
+\begin{zed}
+  TotalReturnBook == ReturnBookOk \lor NotBorrowedError
+\end{zed}
+
+% ============================================================
+% 7. DATA REFINEMENT
+% Abstract (set-based) -> Concrete (sequence-based)
+% ============================================================
+
+% --- Concrete state: books and loans stored as sequences ---
+\begin{schema}{ConcreteLibrary}
+  cbooks : \seq ISBN \\
+  cmembers : \seq PERSON \\
+  ctitle : \seq (ISBN \cross TITLE) \\
+  cgenre : \seq (ISBN \cross GENRE) \\
+  cloans : \seq (ISBN \cross PERSON) \\
+  cwaitlist : \seq (ISBN \cross \seq PERSON)
+\where
+  % Concrete invariants mirror abstract ones over sequences
+  % All ISBNs in cbooks are unique
+  \forall i, j : \dom cbooks @ \\
+    \t1 i \neq j \implies cbooks(i) \neq cbooks(j) \\
+  % All members are unique
+  \forall i, j : \dom cmembers @ \\
+    \t1 i \neq j \implies cmembers(i) \neq cmembers(j) \\
+  % Loaned books must be in the book collection
+  \forall i : \dom cloans @ \\
+    \t1 first(cloans(i)) \in \ran cbooks \\
+  % Loan borrowers must be registered members
+  \forall i : \dom cloans @ \\
+    \t1 second(cloans(i)) \in \ran cmembers \\
+  % Loan limit applies
+  \forall m : \ran cmembers @ \\
+    \t1 \# \{ i : \dom cloans | second(cloans(i)) = m \} \leq maxLoans
+\end{schema}
+
+% --- Retrieve relation: maps concrete state to abstract state ---
+\begin{schema}{Retrieve}
+  Library \\
+  ConcreteLibrary
+\where
+  books = \ran cbooks \\
+  members = \ran cmembers \\
+  title = \ran ctitle \\
+  genre = \ran cgenre \\
+  loans = \ran cloans \\
+  waitlist = \ran cwaitlist
+\end{schema}
+
+% --- Concrete initial state ---
+\begin{schema}{ConcreteInitLibrary}
+  ConcreteLibrary~'
+\where
+  cbooks' = \langle \rangle \\
+  cmembers' = \langle \rangle \\
+  ctitle' = \langle \rangle \\
+  cgenre' = \langle \rangle \\
+  cloans' = \langle \rangle \\
+  cwaitlist' = \langle \rangle
+\end{schema}
+
+% --- Refined Operation 1: Concrete BorrowBook ---
+% Uses sequence append instead of set union
+\begin{schema}{ConcreteBorrowBook}
+  \Delta ConcreteLibrary \\
+  isbn? : ISBN \\
+  p? : PERSON
+\where
+  % Pre: book exists in sequence, member exists, book not already loaned
+  isbn? \in \ran cbooks \\
+  p? \in \ran cmembers \\
+  \lnot (\exists i : \dom cloans @ first(cloans(i)) = isbn?) \\
+  \# \{ i : \dom cloans | second(cloans(i)) = p? \} < maxLoans \\
+  % Post: append new loan record to the sequence
+  cloans' = cloans \cat \langle (isbn?, p?) \rangle \\
+  % Frame
+  cbooks' = cbooks \\
+  cmembers' = cmembers \\
+  ctitle' = ctitle \\
+  cgenre' = cgenre \\
+  cwaitlist' = cwaitlist
+\end{schema}
+
+% --- Refined Operation 2: Concrete ReturnBook ---
+% Filters the loan sequence to remove the returned book
+\begin{schema}{ConcreteReturnBook}
+  \Delta ConcreteLibrary \\
+  isbn? : ISBN \\
+  p? : PERSON
+\where
+  % Pre: the loan record exists
+  \exists i : \dom cloans @ cloans(i) = (isbn?, p?) \\
+  % Post: remove the loan entry by filtering
+  \ran cloans' = \ran cloans \setminus \{ (isbn?, p?) \} \\
+  % All other entries preserved
+  \forall i : \dom cloans' @ cloans'(i) \in \ran cloans \setminus \{ (isbn?, p?) \} \\
+  % Frame
+  cbooks' = cbooks \\
+  cmembers' = cmembers \\
+  ctitle' = ctitle \\
+  cgenre' = cgenre \\
+  cwaitlist' = cwaitlist
+\end{schema}
+
+% --- Refined Operation 3: Concrete SearchByGenre ---
+% Iterates over genre sequence instead of using set comprehension
+\begin{schema}{ConcreteSearchByGenre}
+  \Xi ConcreteLibrary \\
+  g? : GENRE \\
+  result! : \power ISBN
+\where
+  % Pre: there are books
+  \ran cbooks \neq \emptyset \\
+  % Post: collect ISBNs whose genre matches
+  result! = \{ i : \dom cgenre | second(cgenre(i)) = g? @ first(cgenre(i)) \}
+\end{schema}
+
+\end{document}

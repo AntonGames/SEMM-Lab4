@@ -1,0 +1,18 @@
+The goal of the 4th lab is to develop skills in using a formal software engineering method.
+
+Tasks: choose a formal software engineering method (the Z notation, JML, or algebraic specifications) and a tool supporting that method, then apply them to a self-selected software development task (problem).
+
+Task variants:
+Application of Z specification language.
+Choose a subject area (domain) and a tool that supports the Z language, such as CZT, Z Word Tools. Demonstrate the application of the tool to the modeling of that domain. 
+The Z specification must apply all basic concepts of the Z language and include at least:
+5 state variables, 3 functions, 5 invariants, 5 operations with both pre-conditions and post-conditions, 2 operations that return a set,  3 schemas defined using schema calculus operators, 3 operations refined into more concrete operations using an abstraction relation.
+Application of Java modeling language (JML).
+Choose a tool that supports JML, such as OpenJML, select a JAVA program, and apply the tool to that code. All basic concepts of JML must be demonstrated. The JML specification of the chosen class must include at least: 5 invariants, 5 methods with both pre-conditions and post-conditions, and use all the following JML keywords: signals, assignable, assert,  normal_behavior, exceptional_behavior, pure, \old, \forall, \exists, \sum, \old, and \result.
+Application of algebraic specifications. Choose a specific subject area, domain, or a relatively complicated data structure. Select a tool that supports algebraic specifications, such as CafeOBJ, CASL or another suitable tool. Then create an algebraic specification of the chosen domain (data structure) using that tool. The algebraic specification of the chosen abstract data type or class must include at least: 2 constructors, 4 modifiers, and 5 inspectors.
+Settlement and assessment
+The 4th laboratory assignment must be completed and defended by May 27.
+Files containing the completed task variant must be uploaded to the Moodle system at least one day before the defense. 
+A fully completed and defended laboratory assignment submitted on time is awarded 0.5 points.
+If the assignment is only partially completed, of poor quality, or uploaded late, the number of points awarded will be reduced.
+Lecturer: Prof. Romas Baronas
