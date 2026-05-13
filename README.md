@@ -132,6 +132,19 @@ load library-z-spec.tex
 
 > **Note:** ZLive animation (`do InitLibrary`) will not work because the specification uses abstract given sets (`ISBN`, `PERSON`, `TITLE`) which are infinite. ZLive can only animate schemas with finite, bounded types. The typechecker confirmation (`0 warnings and errors`) is the primary verification method.
 
+### Convert to readable Unicode (with Z symbols)
+```bash
+java -jar czt/czt.jar -o library-z-spec.utf8 library-z-spec.tex
+```
+This produces `library-z-spec.utf8` with proper Z symbols (ℙ, ⇸, ∀, ⊆, etc.) readable in any text editor.
+
+### Generate PDF (requires LaTeX)
+Upload `library-z-spec.tex` to [Overleaf](https://overleaf.com) (free, has `oz` package pre-installed), or install MiKTeX locally:
+```bash
+winget install MiKTeX.MiKTeX
+pdflatex library-z-spec.tex
+```
+
 ## Z Notation — LaTeX Commands Reference
 
 All Z symbols in the specification are entered as plain ASCII LaTeX commands:
