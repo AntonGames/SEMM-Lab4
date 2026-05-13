@@ -121,15 +121,16 @@ java -jar czt/czt.jar library-z-spec.tex
 
 Expected output: `0 warnings and errors`
 
-### Animate with ZLive (interactive)
+### Load into ZLive (interactive)
 ```bash
 java -jar czt/czt.jar zlive
 ```
 Then in the ZLive REPL:
 ```
 load library-z-spec.tex
-do InitLibrary
 ```
+
+> **Note:** ZLive animation (`do InitLibrary`) will not work because the specification uses abstract given sets (`ISBN`, `PERSON`, `TITLE`) which are infinite. ZLive can only animate schemas with finite, bounded types. The typechecker confirmation (`0 warnings and errors`) is the primary verification method.
 
 ## References
 
@@ -137,3 +138,4 @@ do InitLibrary
 - J. Woodcock & J. Davies, *Using Z: Specification, Refinement, and Proof*, 1996
 - CZT: https://czt.sourceforge.net/
 - Z Word Tools: https://zwordtools.sourceforge.net/
+- Lecture slides: `Slides/Z-system-slides.pdf`
