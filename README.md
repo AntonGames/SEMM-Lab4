@@ -187,4 +187,4 @@ No special keyboard or fonts are needed — everything is typed in a plain text 
 - J. Woodcock & J. Davies, *Using Z: Specification, Refinement, and Proof*, 1996
 - CZT: https://czt.sourceforge.net/
 - Z Word Tools: https://zwordtools.sourceforge.net/
-- R. Baronas, *SE M&T. Z Specification System*, Software Engineering Models and Methods lecture slides
+- R. Baronas, *Z Specification System*, Software Engineering Models and Methods lecture slides
