@@ -2,3 +2,7 @@ czt/
 Slides/
 pdf_pages/
 
+*.pdf
+*.aux
+*.log
+
